@@ -8,6 +8,7 @@ a.out
 *.so.*
 
 libnvme.pc
+libnvme-spec.pc
 
 test/register
 test/test
