@@ -11,7 +11,7 @@ default: all
 python: all
 	@$(MAKE) -C pynvme python
 
-all: $(NAME).pc
+all: $(NAME)-spec.pc $(NAME).pc
 	@$(MAKE) -C src
 	@$(MAKE) -C test
 	@$(MAKE) -C examples
@@ -48,6 +48,7 @@ SED_PROCESS = \
 install: $(NAME).pc
 	@$(MAKE) -C src install prefix=$(DESTDIR)$(prefix) includedir=$(DESTDIR)$(includedir) libdir=$(DESTDIR)$(libdir)
 	$(INSTALL) -D -m 644 $(NAME).pc $(DESTDIR)$(libdir)/pkgconfig/$(NAME).pc
+	$(INSTALL) -D -m 644 $(NAME)-spec.pc $(DESTDIR)$(libdir)/pkgconfig/$(NAME)-spec.pc
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man2
 	$(INSTALL) -m 644 doc/man/*.2 $(DESTDIR)$(mandir)/man2
 
@@ -55,7 +56,7 @@ install-tests:
 	@$(MAKE) -C test install prefix=$(DESTDIR)$(prefix) datadir=$(DESTDIR)$(datadir)
 
 clean:
-	@rm -f config-host.mak config-host.h cscope.out $(NAME).pc
+	@rm -f config-host.mak config-host.h cscope.out $(NAME)-spec.pc $(NAME).pc
 	@$(MAKE) -C src clean
 	@$(MAKE) -C test clean
 	@$(MAKE) -C examples clean
