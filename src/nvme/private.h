@@ -9,6 +9,17 @@
 #ifndef _LIBNVME_PRIVATE_H
 #define _LIBNVME_PRIVATE_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
+#include <ccan/list/list.h>
+
+#include "fabrics.h"
+
+#ifdef CONFIG_LIBUUID
+#include <uuid/uuid.h>
+#endif
+
 extern const char *nvme_ctrl_sysfs_dir;
 extern const char *nvme_subsys_sysfs_dir;
 extern const char *nvme_ns_sysfs_dir;
