@@ -25,6 +25,7 @@
 #include "util.h"
 #include "tree.h"
 #include "log.h"
+#include "private.h"
 
 static int __nvme_open(const char *name)
 {
@@ -320,46 +321,6 @@ int nvme_set_attr(const char *dir, const char *attr, const char *value)
 	ret = __nvme_set_attr(path, value);
 	free(path);
 	return ret;
-}
-
-static char *__nvme_get_attr(const char *path)
-{
-	char value[4096] = { 0 };
-	int ret, fd;
-
-	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		nvme_msg(LOG_DEBUG, "Failed to open %s: %s\n", path,
-			 strerror(errno));
-		return NULL;
-	}
-
-	ret = read(fd, value, sizeof(value) - 1);
-	close(fd);
-	if (ret < 0 || !strlen(value)) {
-		return NULL;
-	}
-
-	if (value[strlen(value) - 1] == '\n')
-		value[strlen(value) - 1] = '\0';
-	while (strlen(value) > 0 && value[strlen(value) - 1] == ' ')
-		value[strlen(value) - 1] = '\0';
-
-	return strlen(value) ? strdup(value) : NULL;
-}
-
-char *nvme_get_attr(const char *dir, const char *attr)
-{
-	char *path, *value;
-	int ret;
-
-	ret = asprintf(&path, "%s/%s", dir, attr);
-	if (ret < 0)
-		return NULL;
-
-	value = __nvme_get_attr(path);
-	free(path);
-	return value;
 }
 
 char *nvme_get_subsys_attr(nvme_subsystem_t s, const char *attr)
