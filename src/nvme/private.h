@@ -15,6 +15,7 @@
 #include <ccan/list/list.h>
 
 #include "fabrics.h"
+#include "tree.h"
 
 #ifdef CONFIG_LIBUUID
 #include <uuid/uuid.h>
@@ -125,7 +126,7 @@ struct nvme_root {
 };
 
 int nvme_set_attr(const char *dir, const char *attr, const char *value);
-char *nvme_get_attr(const char *dir, const char *attr);
+char *nvme_get_attr(const char *dir, enum nvme_attr attr);
 
 void json_read_config(nvme_root_t r, const char *config_file);
 

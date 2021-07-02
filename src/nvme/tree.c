@@ -398,12 +398,52 @@ static char *__nvme_get_attr(const char *path)
 	return strlen(value) ? strdup(value) : NULL;
 }
 
-char *nvme_get_attr(const char *dir, const char *attr)
+static const char *nvme_attr_to_name(enum nvme_attr attr)
+{
+	switch (attr) {
+	case NVME_ATTR_MODEL:
+		return "model";
+	case NVME_ATTR_SERIAL:
+		return "serial";
+	case NVME_ATTR_FIRMWARE_REV:
+		return "firmware_rev";
+	case NVME_ATTR_HOSTNQN:
+		return "hostnqn";
+	case NVME_ATTR_HOSTID:
+		return "hostid";
+	case NVME_ATTR_SUBSYSNQN:
+		return "subsysnqn";
+	case NVME_ATTR_ADDRESS:
+		return "address";
+	case NVME_ATTR_TRANSPORT:
+		return "transport";
+	case NVME_ATTR_ANA_STATE:
+		return "ana_state";
+	case NVME_ATTR_ANA_GRPID:
+		return "ana_grpid";
+	case NVME_ATTR_STATE:
+		return "state";
+	case NVME_ATTR_NUMA_NODE:
+		return "numa_node";
+	case NVME_ATTR_QUEUE_COUNT:
+		return "queue_count";
+	case NVME_ATTR_SQSIZE:
+		return "sqsize";
+	}
+	return NULL;
+}
+
+char *nvme_get_attr(const char *dir, enum nvme_attr attr)
 {
 	char *path, *value;
+	const char *name;
 	int ret;
 
-	ret = asprintf(&path, "%s/%s", dir, attr);
+	name = nvme_attr_to_name(attr);
+	if (!name)
+		return NULL;
+
+	ret = asprintf(&path, "%s/%s", dir, name);
 	if (ret < 0)
 		return NULL;
 
@@ -415,13 +455,13 @@ char *nvme_get_attr(const char *dir, const char *attr)
 static int nvme_init_subsystem(nvme_subsystem_t s, const char *name,
 			       const char *path)
 {
-	s->model = nvme_get_attr(path, "model");
+	s->model = nvme_get_attr(path, NVME_ATTR_MODEL);
 	if (!s->model) {
 		errno = ENODEV;
 		return -1;
 	}
-	s->serial = nvme_get_attr(path, "serial");
-	s->firmware = nvme_get_attr(path, "firmware_rev");
+	s->serial = nvme_get_attr(path, NVME_ATTR_SERIAL);
+	s->firmware = nvme_get_attr(path, NVME_ATTR_FIRMWARE_REV);
 	s->name = strdup(name);
 	s->sysfs_dir = (char *)path;
 
@@ -441,9 +481,9 @@ static int nvme_scan_subsystem(struct nvme_root *r, char *name,
 	if (ret < 0)
 		return ret;
 
-	hostnqn = nvme_get_attr(path, "hostnqn");
+	hostnqn = nvme_get_attr(path, NVME_ATTR_HOSTNQN);
 	if (hostnqn) {
-		hostid = nvme_get_attr(path, "hostid");
+		hostid = nvme_get_attr(path, NVME_ATTR_HOSTID);
 		h = nvme_lookup_host(r, hostnqn, hostid);
 		free(hostnqn);
 		if (hostid)
@@ -455,7 +495,7 @@ static int nvme_scan_subsystem(struct nvme_root *r, char *name,
 		errno = ENOMEM;
 		return -1;
 	}
-	subsysnqn = nvme_get_attr(path, "subsysnqn");
+	subsysnqn = nvme_get_attr(path, NVME_ATTR_SUBSYSNQN);
 	if (!subsysnqn) {
 		errno = ENODEV;
 		goto free_path;
@@ -567,10 +607,10 @@ static int nvme_ctrl_scan_path(struct nvme_ctrl *c, char *name)
 	p->c = c;
 	p->name = strdup(name);
 	p->sysfs_dir = path;
-	p->ana_state = nvme_get_path_attr(p, "ana_state");
+	p->ana_state = nvme_get_path_attr(p, NVME_ATTR_ANA_STATE);
 	nvme_subsystem_set_path_ns(c->s, p);
 
-	grpid = nvme_get_path_attr(p, "ana_grpid");
+	grpid = nvme_get_path_attr(p, NVME_ATTR_ANA_GRPID);
 	if (grpid) {
 		sscanf(grpid, "%d", &p->grpid);
 		free(grpid);
@@ -630,7 +670,7 @@ const char *nvme_ctrl_get_state(nvme_ctrl_t c)
 {
 	char *state = c->state;
 
-	c->state = nvme_get_ctrl_attr(c, "state");
+	c->state = nvme_get_ctrl_attr(c, NVME_ATTR_STATE);
 	if (state)
 		free(state);
 	return c->state;
@@ -1066,13 +1106,13 @@ static int __nvme_ctrl_init(nvme_ctrl_t c, const char *path, const char *name)
 
 	c->name = strdup(name);
 	c->sysfs_dir = (char *)path;
-	c->firmware = nvme_get_ctrl_attr(c, "firmware_rev");
-	c->model = nvme_get_ctrl_attr(c, "model");
-	c->state = nvme_get_ctrl_attr(c, "state");
-	c->numa_node = nvme_get_ctrl_attr(c, "numa_node");
-	c->queue_count = nvme_get_ctrl_attr(c, "queue_count");
-	c->serial = nvme_get_ctrl_attr(c, "serial");
-	c->sqsize = nvme_get_ctrl_attr(c, "sqsize");
+	c->firmware = nvme_get_ctrl_attr(c, NVME_ATTR_FIRMWARE_REV);
+	c->model = nvme_get_ctrl_attr(c, NVME_ATTR_MODEL);
+	c->state = nvme_get_ctrl_attr(c, NVME_ATTR_STATE);
+	c->numa_node = nvme_get_ctrl_attr(c, NVME_ATTR_NUMA_NODE);
+	c->queue_count = nvme_get_ctrl_attr(c, NVME_ATTR_QUEUE_COUNT);
+	c->serial = nvme_get_ctrl_attr(c, NVME_ATTR_SERIAL);
+	c->sqsize = nvme_get_ctrl_attr(c, NVME_ATTR_SQSIZE);
 	return 0;
 }
 
@@ -1100,7 +1140,7 @@ int nvme_init_ctrl(nvme_host_t h, nvme_ctrl_t c, int instance)
 		goto out_free_name;
 	}
 
-	c->address = nvme_get_attr(path, "address");
+	c->address = nvme_get_attr(path, NVME_ATTR_ADDRESS);
 	if (!c->address) {
 		free(path);
 		errno = ENXIO;
@@ -1142,13 +1182,13 @@ static nvme_ctrl_t nvme_ctrl_alloc(nvme_subsystem_t s, const char *path,
 	char *host_traddr = NULL, *host_iface = NULL;
 	int ret;
 
-	transport = nvme_get_attr(path, "transport");
+	transport = nvme_get_attr(path, NVME_ATTR_TRANSPORT);
 	if (!transport) {
 		errno = ENXIO;
 		return NULL;
 	}
 	/* Parse 'address' string into components */
-	addr = nvme_get_attr(path, "address");
+	addr = nvme_get_attr(path, NVME_ATTR_ADDRESS);
 	address = strdup(addr);
 	if (!strcmp(transport, "pcie")) {
 		/* The 'address' string is the transport address */
@@ -1194,8 +1234,8 @@ nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
 		return NULL;
 	}
 
-	hostnqn = nvme_get_attr(path, "hostnqn");
-	hostid = nvme_get_attr(path, "hostid");
+	hostnqn = nvme_get_attr(path, NVME_ATTR_HOSTNQN);
+	hostid = nvme_get_attr(path, NVME_ATTR_HOSTID);
 	h = nvme_lookup_host(r, hostnqn, hostid);
 	if (hostnqn)
 		free(hostnqn);
@@ -1210,7 +1250,7 @@ nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
 		}
 	}
 
-	subsysnqn = nvme_get_attr(path, "subsysnqn");
+	subsysnqn = nvme_get_attr(path, NVME_ATTR_SUBSYSNQN);
 	if (!subsysnqn) {
 		free(path);
 		errno = ENXIO;

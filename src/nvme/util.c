@@ -323,22 +323,22 @@ int nvme_set_attr(const char *dir, const char *attr, const char *value)
 	return ret;
 }
 
-char *nvme_get_subsys_attr(nvme_subsystem_t s, const char *attr)
+char *nvme_get_subsys_attr(nvme_subsystem_t s, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_subsystem_get_sysfs_dir(s), attr);
 }
 
-char *nvme_get_ctrl_attr(nvme_ctrl_t c, const char *attr)
+char *nvme_get_ctrl_attr(nvme_ctrl_t c, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_ctrl_get_sysfs_dir(c), attr);
 }
 
-char *nvme_get_ns_attr(nvme_ns_t n, const char *attr)
+char *nvme_get_ns_attr(nvme_ns_t n, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_ns_get_sysfs_dir(n), attr);
 }
 
-char *nvme_get_path_attr(nvme_path_t p, const char *attr)
+char *nvme_get_path_attr(nvme_path_t p, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_path_get_sysfs_dir(p), attr);
 }

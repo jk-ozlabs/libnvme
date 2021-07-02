@@ -20,6 +20,23 @@
 #include "ioctl.h"
 #include "util.h"
 
+enum nvme_attr {
+	NVME_ATTR_MODEL,
+	NVME_ATTR_SERIAL,
+	NVME_ATTR_FIRMWARE_REV,
+	NVME_ATTR_HOSTNQN,
+	NVME_ATTR_HOSTID,
+	NVME_ATTR_SUBSYSNQN,
+	NVME_ATTR_ADDRESS,
+	NVME_ATTR_TRANSPORT,
+	NVME_ATTR_ANA_STATE,
+	NVME_ATTR_ANA_GRPID,
+	NVME_ATTR_STATE,
+	NVME_ATTR_NUMA_NODE,
+	NVME_ATTR_QUEUE_COUNT,
+	NVME_ATTR_SQSIZE,
+};
+
 /**
  *
  */
@@ -1002,7 +1019,7 @@ void nvme_free_tree(nvme_root_t r);
  *
  * Return: 
  */
-char *nvme_get_subsys_attr(nvme_subsystem_t s, const char *attr);
+char *nvme_get_subsys_attr(nvme_subsystem_t s, enum nvme_attr attr);
 
 /**
  * nvme_get_ctrl_attr() -
@@ -1011,7 +1028,7 @@ char *nvme_get_subsys_attr(nvme_subsystem_t s, const char *attr);
  *
  * Return: 
  */
-char *nvme_get_ctrl_attr(nvme_ctrl_t c, const char *attr);
+char *nvme_get_ctrl_attr(nvme_ctrl_t c, enum nvme_attr attr);
 
 /**
  * nvme_get_ns_attr() -
@@ -1020,7 +1037,7 @@ char *nvme_get_ctrl_attr(nvme_ctrl_t c, const char *attr);
  *
  * Return: 
  */
-char *nvme_get_ns_attr(nvme_ns_t n, const char *attr);
+char *nvme_get_ns_attr(nvme_ns_t n, enum nvme_attr attr);
 
 nvme_ns_t nvme_subsystem_lookup_namespace(struct nvme_subsystem *s,
 					  __u32 nsid);
@@ -1031,7 +1048,7 @@ nvme_ns_t nvme_subsystem_lookup_namespace(struct nvme_subsystem *s,
  *
  * Return: 
  */
-char *nvme_get_path_attr(nvme_path_t p, const char *attr);
+char *nvme_get_path_attr(nvme_path_t p, enum nvme_attr attr);
 
 nvme_ns_t nvme_scan_namespace(const char *name);
 
