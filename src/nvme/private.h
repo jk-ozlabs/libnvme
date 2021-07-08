@@ -38,6 +38,11 @@ struct nvme_path {
 	int grpid;
 };
 
+struct nvme_ns_local {
+	int fd;
+	char *sysfs_dir;
+};
+
 struct nvme_ns {
 	struct list_node entry;
 	struct list_head paths;
@@ -45,10 +50,10 @@ struct nvme_ns {
 	struct nvme_subsystem *s;
 	struct nvme_ctrl *c;
 
-	int fd;
+	struct nvme_ns_local local;
+
 	__u32 nsid;
 	char *name;
-	char *sysfs_dir;
 
 	int lba_shift;
 	int lba_size;
@@ -66,15 +71,20 @@ struct nvme_ns {
 	enum nvme_csi csi;
 };
 
+struct nvme_ctrl_local {
+	int fd;
+	char *sysfs_dir;
+};
+
 struct nvme_ctrl {
 	struct list_node entry;
 	struct list_head paths;
 	struct list_head namespaces;
 	struct nvme_subsystem *s;
 
-	int fd;
+	struct nvme_ctrl_local local;
+
 	char *name;
-	char *sysfs_dir;
 	char *address;
 	char *firmware;
 	char *model;
@@ -96,14 +106,19 @@ struct nvme_ctrl {
 	struct nvme_fabrics_config cfg;
 };
 
+struct nvme_subsystem_local {
+	char *sysfs_dir;
+};
+
 struct nvme_subsystem {
 	struct list_node entry;
 	struct list_head ctrls;
 	struct list_head namespaces;
 	struct nvme_host *h;
 
+	struct nvme_subsystem_local local;
+
 	char *name;
-	char *sysfs_dir;
 	char *subsysnqn;
 	char *model;
 	char *serial;

@@ -185,7 +185,7 @@ const char *nvme_subsystem_get_nqn(nvme_subsystem_t s)
 
 const char *nvme_subsystem_get_sysfs_dir(nvme_subsystem_t s)
 {
-	return s->sysfs_dir;
+	return s->local.sysfs_dir;
 }
 
 const char *nvme_subsystem_get_name(nvme_subsystem_t s)
@@ -221,9 +221,9 @@ nvme_ns_t nvme_subsystem_next_ns(nvme_subsystem_t s, nvme_ns_t n)
 static void __nvme_free_ns(struct nvme_ns *n)
 {
 	list_del_init(&n->entry);
-	close(n->fd);
+	close(n->local.fd);
 	free(n->name);
-	free(n->sysfs_dir);
+	free(n->local.sysfs_dir);
 	free(n);
 }
 
@@ -245,7 +245,7 @@ static void __nvme_free_subsystem(struct nvme_subsystem *s)
 		__nvme_free_ns(n);
 
 	free(s->name);
-	free(s->sysfs_dir);
+	free(s->local.sysfs_dir);
 	free(s->subsysnqn);
 	if (s->model)
 		free(s->model);
@@ -463,7 +463,7 @@ static int nvme_init_subsystem(nvme_subsystem_t s, const char *name,
 	s->serial = nvme_get_attr(path, NVME_ATTR_SERIAL);
 	s->firmware = nvme_get_attr(path, NVME_ATTR_FIRMWARE_REV);
 	s->name = strdup(name);
-	s->sysfs_dir = (char *)path;
+	s->local.sysfs_dir = (char *)path;
 
 	return 0;
 }
@@ -592,7 +592,7 @@ static int nvme_ctrl_scan_path(struct nvme_ctrl *c, char *name)
 		errno = ENXIO;
 		return -1;
 	}
-	ret = asprintf(&path, "%s/%s", c->sysfs_dir, name);
+	ret = asprintf(&path, "%s/%s", c->local.sysfs_dir, name);
 	if (ret < 0) {
 		errno = ENOMEM;
 		return -1;
@@ -628,7 +628,7 @@ free_path:
 
 int nvme_ctrl_get_fd(nvme_ctrl_t c)
 {
-	return c->fd;
+	return c->local.fd;
 }
 
 nvme_subsystem_t nvme_ctrl_get_subsystem(nvme_ctrl_t c)
@@ -643,7 +643,7 @@ const char *nvme_ctrl_get_name(nvme_ctrl_t c)
 
 const char *nvme_ctrl_get_sysfs_dir(nvme_ctrl_t c)
 {
-	return c->sysfs_dir;
+	return c->local.sysfs_dir;
 }
 
 const char *nvme_ctrl_get_subsysnqn(nvme_ctrl_t c)
@@ -806,12 +806,12 @@ int nvme_disconnect_ctrl(nvme_ctrl_t c)
 		return ret;
 	}
 	nvme_msg(LOG_INFO, "%s: disconnected\n", c->name);
-	if (c->fd >= 0) {
-		close(c->fd);
-		c->fd = -1;
+	if (c->local.fd >= 0) {
+		close(c->local.fd);
+		c->local.fd = -1;
 	}
+	FREE_CTRL_ATTR(c->local.sysfs_dir);
 	FREE_CTRL_ATTR(c->name);
-	FREE_CTRL_ATTR(c->sysfs_dir);
 	FREE_CTRL_ATTR(c->firmware);
 	FREE_CTRL_ATTR(c->model);
 	FREE_CTRL_ATTR(c->state);
@@ -843,12 +843,12 @@ static void __nvme_free_ctrl(nvme_ctrl_t c)
 	nvme_ctrl_for_each_ns_safe(c, n, _n)
 		__nvme_free_ns(n);
 
-	if (c->fd >= 0)
-		close(c->fd);
+	if (c->local.fd >= 0)
+		close(c->local.fd);
+	if (c->local.sysfs_dir)
+		free(c->local.sysfs_dir);
 	if (c->name)
 		free(c->name);
-	if (c->sysfs_dir)
-		free(c->sysfs_dir);
 	if (c->address)
 		free(c->address);
 	if (c->traddr)
@@ -968,7 +968,7 @@ struct nvme_ctrl *nvme_create_ctrl(const char *subsysnqn, const char *transport,
 	} else if (!strcmp(subsysnqn, NVME_DISC_SUBSYS_NAME))
 		discovery = true;
 	c = calloc(1, sizeof(*c));
-	c->fd = -1;
+	c->local.fd = -1;
 	c->cfg.tos = -1;
 	list_head_init(&c->namespaces);
 	list_head_init(&c->paths);
@@ -1100,12 +1100,12 @@ static int __nvme_ctrl_init(nvme_ctrl_t c, const char *path, const char *name)
 	}
 	closedir(d);
 
-	c->fd = nvme_open(name);
-	if (c->fd < 0)
-		return c->fd;
+	c->local.fd = nvme_open(name);
+	if (c->local.fd < 0)
+		return c->local.fd;
 
 	c->name = strdup(name);
-	c->sysfs_dir = (char *)path;
+	c->local.sysfs_dir = (char *)path;
 	c->firmware = nvme_get_ctrl_attr(c, NVME_ATTR_FIRMWARE_REV);
 	c->model = nvme_get_ctrl_attr(c, NVME_ATTR_MODEL);
 	c->state = nvme_get_ctrl_attr(c, NVME_ATTR_STATE);
@@ -1274,7 +1274,7 @@ static int nvme_subsystem_scan_ctrl(struct nvme_subsystem *s, char *name)
 	nvme_ctrl_t c;
 	char *path;
 
-	if (asprintf(&path, "%s/%s", s->sysfs_dir, name) < 0) {
+	if (asprintf(&path, "%s/%s", s->local.sysfs_dir, name) < 0) {
 		errno = ENOMEM;
 		return -1;
 	}
@@ -1317,7 +1317,7 @@ static int nvme_bytes_to_lba(nvme_ns_t n, off_t offset, size_t count,
 
 int nvme_ns_get_fd(nvme_ns_t n)
 {
-	return n->fd;
+	return n->local.fd;
 }
 
 nvme_subsystem_t nvme_ns_get_subsystem(nvme_ns_t n)
@@ -1337,7 +1337,7 @@ int nvme_ns_get_nsid(nvme_ns_t n)
 
 const char *nvme_ns_get_sysfs_dir(nvme_ns_t n)
 {
-	return n->sysfs_dir;
+	return n->local.sysfs_dir;
 }
 
 const char *nvme_ns_get_name(nvme_ns_t n)
@@ -1560,11 +1560,11 @@ static nvme_ns_t nvme_ns_open(const char *name)
 	}
 
 	n->name = strdup(name);
-	n->fd = nvme_open(n->name);
-	if (n->fd < 0)
+	n->local.fd = nvme_open(n->name);
+	if (n->local.fd < 0)
 		goto free_ns;
 
-	if (nvme_get_nsid(n->fd, &n->nsid) < 0)
+	if (nvme_get_nsid(n->local.fd, &n->nsid) < 0)
 		goto close_fd;
 
 	if (nvme_ns_init(n) != 0)
@@ -1576,7 +1576,7 @@ static nvme_ns_t nvme_ns_open(const char *name)
 	return n;
 
 close_fd:
-	close(n->fd);
+	close(n->local.fd);
 free_ns:
 	free(n->name);
 	free(n);
@@ -1599,7 +1599,7 @@ static struct nvme_ns *__nvme_scan_namespace(const char *sysfs_dir, const char *
 	if (!n)
 		goto free_path;
 
-	n->sysfs_dir = path;
+	n->local.sysfs_dir = path;
 	return n;
 
 free_path:
@@ -1620,7 +1620,7 @@ static int nvme_ctrl_scan_namespace(struct nvme_ctrl *c, char *name)
 		errno = EINVAL;
 		return -1;
 	}
-	n = __nvme_scan_namespace(c->sysfs_dir, name);
+	n = __nvme_scan_namespace(c->local.sysfs_dir, name);
 	if (!n)
 		return -1;
 
@@ -1634,7 +1634,7 @@ static int nvme_subsystem_scan_namespace(struct nvme_subsystem *s, char *name)
 {
 	struct nvme_ns *n;
 
-	n = __nvme_scan_namespace(s->sysfs_dir, name);
+	n = __nvme_scan_namespace(s->local.sysfs_dir, name);
 	if (!n)
 		return -1;
 
@@ -1653,7 +1653,7 @@ struct nvme_ns *nvme_subsystem_lookup_namespace(struct nvme_subsystem *s,
 	ret = asprintf(&name, "%sn%u", s->name, nsid);
 	if (ret < 0)
 		return NULL;
-	n = __nvme_scan_namespace(s->sysfs_dir, name);
+	n = __nvme_scan_namespace(s->local.sysfs_dir, name);
 	if (!n) {
 		free(name);
 		return NULL;
