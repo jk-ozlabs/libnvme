@@ -28,13 +28,15 @@ int main()
 
 	printf(".\n");
 	nvme_for_each_host(r, h) {
+		printf("host: %s NQN=%s\n", nvme_host_get_hostid(h),
+		       nvme_host_get_hostnqn(h));
 		nvme_for_each_subsystem_safe(h, s, _s) {
-			printf("%c-- %s - NQN=%s\n", _s ? '|' : '`',
+			printf("%c-- subsys: %s - NQN=%s\n", _s ? '|' : '`',
 			       nvme_subsystem_get_name(s),
 			       nvme_subsystem_get_nqn(s));
 
 			nvme_subsystem_for_each_ns_safe(s, n, _n) {
-				printf("%c   |-- %s lba size:%d lba max:%lu\n",
+				printf("%c   |-- ns: %s lba size:%d lba max:%lu\n",
 				       _s ? '|' : ' ',
 				       nvme_ns_get_name(n),
 				       nvme_ns_get_lba_size(n),
@@ -42,7 +44,7 @@ int main()
 			}
 
 			nvme_subsystem_for_each_ctrl_safe(s, c, _c) {
-				printf("%c   %c-- %s %s %s %s\n",
+				printf("%c   %c-- ctrl: %s %s %s %s\n",
 				       _s ? '|' : ' ', _c ? '|' : '`',
 				       nvme_ctrl_get_name(c),
 				       nvme_ctrl_get_transport(c),
@@ -50,7 +52,7 @@ int main()
 				       nvme_ctrl_get_state(c));
 
 				nvme_ctrl_for_each_ns_safe(c, n, _n)
-					printf("%c   %c   %c-- %s lba size:%d lba max:%lu\n",
+					printf("%c   %c   %c-- ns: %s lba size:%d lba max:%lu\n",
 					       _s ? '|' : ' ', _c ? '|' : ' ',
 					       _n ? '|' : '`',
 					       nvme_ns_get_name(n),
@@ -58,7 +60,7 @@ int main()
 					       nvme_ns_get_lba_count(n));
 
 				nvme_ctrl_for_each_path_safe(c, p, _p)
-					printf("%c   %c   %c-- %s %s\n",
+					printf("%c   %c   %c-- path: %s %s\n",
 					       _s ? '|' : ' ', _c ? '|' : ' ',
 					       _p ? '|' : '`',
 					       nvme_path_get_name(p),
