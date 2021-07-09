@@ -147,4 +147,15 @@ void json_read_config(nvme_root_t r, const char *config_file);
 
 int json_update_config(nvme_root_t r, const char *config_file);
 
+void __nvme_free_subsystem(struct nvme_subsystem *s);
+void __nvme_free_host(struct nvme_host *h);
+void __nvme_free_ctrl(nvme_ctrl_t c);
+
+int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f);
+int nvme_subsystem_scan_namespaces(struct nvme_subsystem *s);
+int nvme_subsystem_scan_ctrls(struct nvme_subsystem *s);
+int nvme_ctrl_scan_namespaces(struct nvme_ctrl *c);
+int nvme_ctrl_scan_paths(struct nvme_ctrl *c);
+
+int nvme_ns_init(struct nvme_ns *n);
 #endif /* _LIBNVME_PRIVATE_H */
