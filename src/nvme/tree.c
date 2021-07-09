@@ -795,21 +795,29 @@ int nvme_ctrl_delete(nvme_ctrl_t c)
 {
 	if (!c->s)
 		return EINVAL;
+	if (!c->s->h->r->ops->ctrl_delete)
+		return EINVAL;
 	return c->s->h->r->ops->ctrl_delete(c);
 }
 
 nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
 {
+	if (!r->ops->scan_ctrl)
+		return NULL;
 	return r->ops->scan_ctrl(r, name);
 }
 
 nvme_ns_t nvme_scan_ns(nvme_root_t r, const char *name)
 {
+	if (!r->ops->scan_ns)
+		return NULL;
 	return r->ops->scan_ns(r, name);
 }
 
 nvme_ns_t nvme_subsystem_lookup_namespace(nvme_subsystem_t s, __u32 nsid)
 {
+	if (!s->h->r->ops->subsys_lookup_ns)
+		return NULL;
 	return s->h->r->ops->subsys_lookup_ns(s, nsid);
 }
 
