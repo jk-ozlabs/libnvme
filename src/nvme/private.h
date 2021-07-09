@@ -130,10 +130,35 @@ struct nvme_host {
 	char *hostid;
 };
 
+struct nvme_ops {
+	/* attribute access */
+	char *(*get_subsys_attr)(struct nvme_subsystem *s, enum nvme_attr a);
+	char *(*get_ctrl_attr)(struct nvme_ctrl *c, enum nvme_attr a);
+	char *(*get_ns_attr)(struct nvme_ns *n, enum nvme_attr a);
+	char *(*get_path_attr)(struct nvme_path *p, enum nvme_attr a);
+
+	/* scan */
+	int (*scan_topology)(struct nvme_root *r, nvme_scan_filter_t f);
+	void (*ctrl_rescan)(struct nvme_ctrl *c);
+	int (*ctrl_delete)(struct nvme_ctrl *c);
+
+	/* direct scan. */
+	/* TODO: actually needed in API? */
+	struct nvme_ctrl *(*scan_ctrl)(struct nvme_root *r, const char *name);
+	struct nvme_ns *(*scan_ns)(struct nvme_root *r, const char *name);
+	struct nvme_ns *(*subsys_lookup_ns)(struct nvme_subsystem *s, __u32 id);
+
+	/* init */
+	int (*ctrl_init)(struct nvme_host *h, struct nvme_ctrl *c,
+			 int instance);
+
+};
+
 struct nvme_root {
 	char *config_file;
 	struct list_head hosts;
 	bool modified;
+	struct nvme_ops *ops;
 };
 
 void json_read_config(nvme_root_t r, const char *config_file);
@@ -150,6 +175,6 @@ int nvme_ns_init(struct nvme_ns *n);
 int nvme_ctrl_delete(struct nvme_ctrl *c);
 
 /* local implementations */
-void nvme_local_rescan_ctrl(struct nvme_ctrl *c);
+extern struct nvme_ops local_ops;
 
 #endif /* _LIBNVME_PRIVATE_H */

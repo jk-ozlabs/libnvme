@@ -58,6 +58,7 @@ nvme_root_t nvme_scan_filter(nvme_scan_filter_t f)
 	}
 
 	list_head_init(&r->hosts);
+	r->ops = &local_ops;
 	nvme_scan_topology(r, f);
 	return r;
 }
@@ -749,10 +750,69 @@ struct nvme_ctrl *nvme_lookup_ctrl(struct nvme_subsystem *s, const char *transpo
 	return c;
 }
 
-void nvme_rescan_ctrl(struct nvme_ctrl *c)
+char *nvme_get_subsystem_attr(nvme_subsystem_t s, enum nvme_attr attr)
 {
-	nvme_local_rescan_ctrl(c);
+	return s->h->r->ops->get_subsys_attr(s, attr);
 }
+
+char *nvme_get_ctrl_attr(nvme_ctrl_t c, enum nvme_attr attr)
+{
+	if (!c->s)
+		return NULL;
+	return c->s->h->r->ops->get_ctrl_attr(c, attr);
+}
+
+char *nvme_get_ns_attr(nvme_ns_t n, enum nvme_attr attr)
+{
+	struct nvme_subsystem *s;
+	s = n->s ?: n->c->s;
+	return s->h->r->ops->get_ns_attr(n, attr);
+}
+
+char *nvme_get_path_attr(nvme_path_t p, enum nvme_attr attr)
+{
+	return p->c->s->h->r->ops->get_path_attr(p, attr);
+}
+
+int nvme_scan_topology(nvme_root_t r, nvme_scan_filter_t f)
+{
+	return r->ops->scan_topology(r, f);
+}
+
+void nvme_rescan_ctrl(nvme_ctrl_t c)
+{
+	if (!c->s)
+		return;
+	return c->s->h->r->ops->ctrl_rescan(c);
+}
+
+int nvme_init_ctrl(nvme_host_t h, nvme_ctrl_t c, int instance)
+{
+	return h->r->ops->ctrl_init(h, c, instance);
+}
+
+int nvme_ctrl_delete(nvme_ctrl_t c)
+{
+	if (!c->s)
+		return EINVAL;
+	return c->s->h->r->ops->ctrl_delete(c);
+}
+
+nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
+{
+	return r->ops->scan_ctrl(r, name);
+}
+
+nvme_ns_t nvme_scan_ns(nvme_root_t r, const char *name)
+{
+	return r->ops->scan_ns(r, name);
+}
+
+nvme_ns_t nvme_subsystem_lookup_namespace(nvme_subsystem_t s, __u32 nsid)
+{
+	return s->h->r->ops->subsys_lookup_ns(s, nsid);
+}
+
 
 static int nvme_bytes_to_lba(nvme_ns_t n, off_t offset, size_t count,
 			    __u64 *lba, __u16 *nlb)

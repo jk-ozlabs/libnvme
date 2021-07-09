@@ -135,7 +135,7 @@ static inline void nvme_free_dirents(struct dirent **d, int i)
 	free(d);
 }
 
-int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f)
+static int nvme_local_scan_topology(struct nvme_root *r, nvme_scan_filter_t f)
 {
 	struct dirent **subsys;
 	int i, ret;
@@ -292,22 +292,22 @@ static int nvme_set_attr(const char *dir, const char *attr, const char *value)
 	return ret;
 }
 
-char *nvme_get_subsys_attr(nvme_subsystem_t s, enum nvme_attr attr)
+static char *nvme_local_get_subsys_attr(nvme_subsystem_t s, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_subsystem_get_sysfs_dir(s), attr);
 }
 
-char *nvme_get_ctrl_attr(nvme_ctrl_t c, enum nvme_attr attr)
+static char *nvme_local_get_ctrl_attr(nvme_ctrl_t c, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_ctrl_get_sysfs_dir(c), attr);
 }
 
-char *nvme_get_ns_attr(nvme_ns_t n, enum nvme_attr attr)
+static char *nvme_local_get_ns_attr(nvme_ns_t n, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_ns_get_sysfs_dir(n), attr);
 }
 
-char *nvme_get_path_attr(nvme_path_t p, enum nvme_attr attr)
+static char *nvme_local_get_path_attr(nvme_path_t p, enum nvme_attr attr)
 {
 	return nvme_get_attr(nvme_path_get_sysfs_dir(p), attr);
 }
@@ -532,7 +532,8 @@ static int __nvme_ctrl_init(nvme_ctrl_t c, const char *path, const char *name)
 	return 0;
 }
 
-int nvme_init_ctrl(nvme_host_t h, nvme_ctrl_t c, int instance)
+static int nvme_local_init_ctrl(struct nvme_host *h, struct nvme_ctrl *c,
+				int instance)
 {
 	nvme_subsystem_t s;
 	char *subsys_name = NULL;
@@ -635,13 +636,14 @@ static nvme_ctrl_t nvme_ctrl_alloc(nvme_subsystem_t s, const char *path,
 	return (ret < 0) ? NULL : c;
 }
 
-int nvme_ctrl_delete(struct nvme_ctrl *c)
+static int nvme_local_ctrl_delete(struct nvme_ctrl *c)
 {
 	return nvme_set_attr(nvme_ctrl_get_sysfs_dir(c),
 			    "delete_controller", "1");
 }
 
-nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
+static struct nvme_ctrl *nvme_local_scan_ctrl(struct nvme_root *r,
+					      const char *name)
 {
 	nvme_host_t h;
 	nvme_subsystem_t s;
@@ -771,7 +773,7 @@ free_path:
 	return NULL;
 }
 
-nvme_ns_t nvme_scan_namespace(const char *name)
+static struct nvme_ns *nvme_local_scan_ns(struct nvme_root *r, const char *name)
 {
 	return __nvme_scan_namespace(nvme_ns_sysfs_dir, name);
 }
@@ -807,8 +809,8 @@ static int nvme_subsystem_scan_namespace(struct nvme_subsystem *s, char *name)
 	return 0;
 }
 
-struct nvme_ns *nvme_subsystem_lookup_namespace(struct nvme_subsystem *s,
-						__u32 nsid)
+static struct nvme_ns *nvme_local_subsys_lookup_ns(struct nvme_subsystem *s,
+						   __u32 nsid)
 {
 	struct nvme_ns *n;
 	char *name;
@@ -828,7 +830,7 @@ struct nvme_ns *nvme_subsystem_lookup_namespace(struct nvme_subsystem *s,
 	return n;
 }
 
-void nvme_local_rescan_ctrl(struct nvme_ctrl *c)
+static void nvme_local_ctrl_rescan(struct nvme_ctrl *c)
 {
 	if (!c->s)
 		return;
@@ -836,3 +838,18 @@ void nvme_local_rescan_ctrl(struct nvme_ctrl *c)
 	nvme_ctrl_scan_namespaces(c);
 	nvme_ctrl_scan_paths(c);
 }
+
+struct nvme_ops local_ops = {
+	.get_subsys_attr = nvme_local_get_subsys_attr,
+	.get_ctrl_attr = nvme_local_get_ctrl_attr,
+	.get_ns_attr = nvme_local_get_ns_attr,
+	.get_path_attr = nvme_local_get_path_attr,
+	.scan_topology = nvme_local_scan_topology,
+	.ctrl_rescan = nvme_local_ctrl_rescan,
+	.ctrl_delete = nvme_local_ctrl_delete,
+	.ctrl_init = nvme_local_init_ctrl,
+
+	.scan_ctrl = nvme_local_scan_ctrl,
+	.scan_ns = nvme_local_scan_ns,
+	.subsys_lookup_ns = nvme_local_subsys_lookup_ns,
+};
