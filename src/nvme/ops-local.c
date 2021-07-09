@@ -27,9 +27,9 @@
 #include "log.h"
 #include "private.h"
 
-const char *nvme_ctrl_sysfs_dir = "/sys/class/nvme";
-const char *nvme_ns_sysfs_dir = "/sys/block";
-const char *nvme_subsys_sysfs_dir = "/sys/class/nvme-subsystem";
+static const char *nvme_ctrl_sysfs_dir = "/sys/class/nvme";
+static const char *nvme_ns_sysfs_dir = "/sys/block";
+static const char *nvme_subsys_sysfs_dir = "/sys/class/nvme-subsystem";
 
 static int nvme_subsystem_scan_namespace(struct nvme_subsystem *s, char *name);
 static int nvme_scan_subsystem(struct nvme_root *r, char *name,
@@ -38,7 +38,7 @@ static int nvme_subsystem_scan_ctrl(struct nvme_subsystem *s, char *name);
 static int nvme_ctrl_scan_namespace(struct nvme_ctrl *c, char *name);
 static int nvme_ctrl_scan_path(struct nvme_ctrl *c, char *name);
 
-int nvme_namespace_filter(const struct dirent *d)
+static int nvme_namespace_filter(const struct dirent *d)
 {
 	int i, n;
 
@@ -52,7 +52,7 @@ int nvme_namespace_filter(const struct dirent *d)
 	return 0;
 }
 
-int nvme_paths_filter(const struct dirent *d)
+static int nvme_paths_filter(const struct dirent *d)
 {
 	int i, c, n;
 
@@ -66,7 +66,7 @@ int nvme_paths_filter(const struct dirent *d)
 	return 0;
 }
 
-int nvme_ctrls_filter(const struct dirent *d)
+static int nvme_ctrls_filter(const struct dirent *d)
 {
 	int i, c, n;
 
@@ -85,7 +85,7 @@ int nvme_ctrls_filter(const struct dirent *d)
 	return 0;
 }
 
-int nvme_subsys_filter(const struct dirent *d)
+static int nvme_subsys_filter(const struct dirent *d)
 {
 	int i;
 
@@ -99,31 +99,31 @@ int nvme_subsys_filter(const struct dirent *d)
 	return 0;
 }
 
-int nvme_scan_subsystems(struct dirent ***subsys)
+static int nvme_scan_subsystems(struct dirent ***subsys)
 {
 	return scandir(nvme_subsys_sysfs_dir, subsys, nvme_subsys_filter,
 		       alphasort);
 }
 
-int nvme_scan_subsystem_ctrls(nvme_subsystem_t s, struct dirent ***ctrls)
+static int nvme_scan_subsystem_ctrls(nvme_subsystem_t s, struct dirent ***ctrls)
 {
 	return scandir(nvme_subsystem_get_sysfs_dir(s), ctrls,
 		       nvme_ctrls_filter, alphasort);
 }
 
-int nvme_scan_subsystem_namespaces(nvme_subsystem_t s, struct dirent ***namespaces)
+static int nvme_scan_subsystem_namespaces(nvme_subsystem_t s, struct dirent ***namespaces)
 {
 	return scandir(nvme_subsystem_get_sysfs_dir(s), namespaces,
 		       nvme_namespace_filter, alphasort);
 }
 
-int nvme_scan_ctrl_namespace_paths(nvme_ctrl_t c, struct dirent ***namespaces)
+static int nvme_scan_ctrl_namespace_paths(nvme_ctrl_t c, struct dirent ***namespaces)
 {
 	return scandir(nvme_ctrl_get_sysfs_dir(c), namespaces,
 		       nvme_paths_filter, alphasort);
 }
 
-int nvme_scan_ctrl_namespaces(nvme_ctrl_t c, struct dirent ***namespaces)
+static int nvme_scan_ctrl_namespaces(nvme_ctrl_t c, struct dirent ***namespaces)
 {
 	return scandir(nvme_ctrl_get_sysfs_dir(c), namespaces,
 		       nvme_namespace_filter, alphasort);
@@ -692,7 +692,8 @@ free_ns:
 	return NULL;
 }
 
-static struct nvme_ns *__nvme_scan_namespace(const char *sysfs_dir, const char *name)
+static struct nvme_ns *__nvme_scan_namespace(const char *sysfs_dir,
+					     const char *name)
 {
 	struct nvme_ns *n;
 	char *path;

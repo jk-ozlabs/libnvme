@@ -21,10 +21,6 @@
 #include <uuid/uuid.h>
 #endif
 
-extern const char *nvme_ctrl_sysfs_dir;
-extern const char *nvme_subsys_sysfs_dir;
-extern const char *nvme_ns_sysfs_dir;
-
 struct nvme_path {
 	struct list_node entry;
 	struct list_node nentry;
