@@ -586,6 +586,12 @@ static nvme_ctrl_t nvme_ctrl_alloc(nvme_subsystem_t s, const char *path,
 	return (ret < 0) ? NULL : c;
 }
 
+int nvme_ctrl_delete(struct nvme_ctrl *c)
+{
+	return nvme_set_attr(nvme_ctrl_get_sysfs_dir(c),
+			    "delete_controller", "1");
+}
+
 nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
 {
 	nvme_host_t h;

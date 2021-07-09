@@ -154,4 +154,5 @@ int nvme_ctrl_scan_namespaces(struct nvme_ctrl *c);
 int nvme_ctrl_scan_paths(struct nvme_ctrl *c);
 
 int nvme_ns_init(struct nvme_ns *n);
+int nvme_ctrl_delete(struct nvme_ctrl *c);
 #endif /* _LIBNVME_PRIVATE_H */
