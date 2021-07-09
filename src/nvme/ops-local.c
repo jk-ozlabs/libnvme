@@ -151,7 +151,7 @@ int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f)
 	return 0;
 }
 
-int nvme_subsystem_scan_namespaces(struct nvme_subsystem *s)
+static int nvme_subsystem_scan_namespaces(struct nvme_subsystem *s)
 {
 	struct dirent **namespaces;
 	int i, ret;
@@ -167,7 +167,7 @@ int nvme_subsystem_scan_namespaces(struct nvme_subsystem *s)
 	return 0;
 }
 
-int nvme_subsystem_scan_ctrls(struct nvme_subsystem *s)
+static int nvme_subsystem_scan_ctrls(struct nvme_subsystem *s)
 {
 	struct dirent **ctrls;
 	int i, ret;
@@ -451,7 +451,7 @@ free_path:
 	return -1;
 }
 
-int nvme_ctrl_scan_paths(struct nvme_ctrl *c)
+static int nvme_ctrl_scan_paths(struct nvme_ctrl *c)
 {
 	struct dirent **paths;
 	int i, ret;
@@ -467,7 +467,7 @@ int nvme_ctrl_scan_paths(struct nvme_ctrl *c)
 	return 0;
 }
 
-int nvme_ctrl_scan_namespaces(struct nvme_ctrl *c)
+static int nvme_ctrl_scan_namespaces(struct nvme_ctrl *c)
 {
 	struct dirent **namespaces;
 	int i, ret;
@@ -826,4 +826,13 @@ struct nvme_ns *nvme_subsystem_lookup_namespace(struct nvme_subsystem *s,
 	n->s = s;
 	list_add(&s->namespaces, &n->entry);
 	return n;
+}
+
+void nvme_local_rescan_ctrl(struct nvme_ctrl *c)
+{
+	if (!c->s)
+		return;
+	nvme_subsystem_scan_namespaces(c->s);
+	nvme_ctrl_scan_namespaces(c);
+	nvme_ctrl_scan_paths(c);
 }

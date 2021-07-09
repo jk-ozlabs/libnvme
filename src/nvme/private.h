@@ -145,11 +145,11 @@ void __nvme_free_host(struct nvme_host *h);
 void __nvme_free_ctrl(nvme_ctrl_t c);
 
 int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f);
-int nvme_subsystem_scan_namespaces(struct nvme_subsystem *s);
-int nvme_subsystem_scan_ctrls(struct nvme_subsystem *s);
-int nvme_ctrl_scan_namespaces(struct nvme_ctrl *c);
-int nvme_ctrl_scan_paths(struct nvme_ctrl *c);
 
 int nvme_ns_init(struct nvme_ns *n);
 int nvme_ctrl_delete(struct nvme_ctrl *c);
+
+/* local implementations */
+void nvme_local_rescan_ctrl(struct nvme_ctrl *c);
+
 #endif /* _LIBNVME_PRIVATE_H */

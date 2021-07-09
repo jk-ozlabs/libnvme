@@ -751,11 +751,7 @@ struct nvme_ctrl *nvme_lookup_ctrl(struct nvme_subsystem *s, const char *transpo
 
 void nvme_rescan_ctrl(struct nvme_ctrl *c)
 {
-	if (!c->s)
-		return;
-	nvme_subsystem_scan_namespaces(c->s);
-	nvme_ctrl_scan_namespaces(c);
-	nvme_ctrl_scan_paths(c);
+	nvme_local_rescan_ctrl(c);
 }
 
 static int nvme_bytes_to_lba(nvme_ns_t n, off_t offset, size_t count,
