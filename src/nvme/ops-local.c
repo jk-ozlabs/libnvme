@@ -244,7 +244,7 @@ static const char *nvme_attr_to_name(enum nvme_attr attr)
 	return NULL;
 }
 
-char *nvme_get_attr(const char *dir, enum nvme_attr attr)
+static char *nvme_get_attr(const char *dir, enum nvme_attr attr)
 {
 	char *path, *value;
 	const char *name;
@@ -261,6 +261,55 @@ char *nvme_get_attr(const char *dir, enum nvme_attr attr)
 	value = __nvme_get_attr(path);
 	free(path);
 	return value;
+}
+
+static int __nvme_set_attr(const char *path, const char *value)
+{
+	int ret, fd;
+
+	fd = open(path, O_WRONLY);
+	if (fd < 0) {
+		nvme_msg(LOG_DEBUG, "Failed to open %s: %s\n", path,
+			 strerror(errno));
+		return -1;
+	}
+	ret = write(fd, value, strlen(value));
+	close(fd);
+	return ret;
+}
+
+static int nvme_set_attr(const char *dir, const char *attr, const char *value)
+{
+	char *path;
+	int ret;
+
+	ret = asprintf(&path, "%s/%s", dir, attr);
+	if (ret < 0)
+		return -1;
+
+	ret = __nvme_set_attr(path, value);
+	free(path);
+	return ret;
+}
+
+char *nvme_get_subsys_attr(nvme_subsystem_t s, enum nvme_attr attr)
+{
+	return nvme_get_attr(nvme_subsystem_get_sysfs_dir(s), attr);
+}
+
+char *nvme_get_ctrl_attr(nvme_ctrl_t c, enum nvme_attr attr)
+{
+	return nvme_get_attr(nvme_ctrl_get_sysfs_dir(c), attr);
+}
+
+char *nvme_get_ns_attr(nvme_ns_t n, enum nvme_attr attr)
+{
+	return nvme_get_attr(nvme_ns_get_sysfs_dir(n), attr);
+}
+
+char *nvme_get_path_attr(nvme_path_t p, enum nvme_attr attr)
+{
+	return nvme_get_attr(nvme_path_get_sysfs_dir(p), attr);
 }
 
 static int nvme_init_subsystem(nvme_subsystem_t s, const char *name,
