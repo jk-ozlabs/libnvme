@@ -21,9 +21,7 @@
 
 #include <ccan/list/list.h>
 #include "ioctl.h"
-#include "filters.h"
 #include "tree.h"
-#include "filters.h"
 #include "util.h"
 #include "fabrics.h"
 #include "log.h"

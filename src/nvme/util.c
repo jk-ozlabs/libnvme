@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "filters.h"
 #include "util.h"
 #include "tree.h"
 #include "log.h"
