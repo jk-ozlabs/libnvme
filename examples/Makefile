@@ -7,12 +7,13 @@ ifneq ($(MAKECMDGOALS),clean)
 include ../config-host.mak
 endif
 
-all_targets += telemetry-listen display-tree display-columnar discover-loop
+all_targets += telemetry-listen display-tree display-columnar discover-loop \
+	       mi-mctp
 
 all: $(all_targets)
 
-%: %.c ../src/libnvme.a
-	$(QUIET_CC)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lnvme $(LIBS)
+%: %.c ../src/libnvme.a ../src/libnvme-mi.a
+	$(QUIET_CC)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lnvme-mi -lnvme $(LIBS)
 
 clean:
 	rm -f $(all_targets)

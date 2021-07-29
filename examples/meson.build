@@ -23,3 +23,8 @@ executable(
     link_with: libnvme,
     include_directories: incdir)
 
+executable(
+    'mi-mctp',
+    ['mi-mctp.c'],
+    link_with: libnvme_mi,
+    include_directories: incdir)

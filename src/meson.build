@@ -21,6 +21,13 @@ sources += [
     'nvme/util.c',
 ]
 
+mi_sources = [
+    'nvme/cleanup.c',
+    'nvme/log.c',
+    'nvme/mi.c',
+    'nvme/mi-mctp.c',
+]
+
 if conf.get('CONFIG_JSONC')
     sources += 'nvme/json.c'
 endif
@@ -30,9 +37,13 @@ deps = [
     json_c,
 ]
 
+mi_deps = [ ]
+
 source_dir = meson.current_source_dir()
 mapfile = 'libnvme.map'
 version_script_arg = join_paths(source_dir, mapfile)
+mi_mapfile = 'libnvme-mi.map'
+mi_version_script_arg = join_paths(source_dir, mi_mapfile)
 
 libnvme = library(
     'nvme', # produces libnvme.so
@@ -59,6 +70,22 @@ libnvme_dep = declare_dependency(
     link_with: libnvme,
 )
 
+libnvme_mi= library(
+    'nvme-mi', # produces libnvme-mi.so
+    mi_sources,
+    version: library_version,
+    link_args: ['-Wl,--version-script=' + mi_version_script_arg],
+    dependencies: mi_deps,
+    link_depends: mi_mapfile,
+    include_directories: incdir,
+    install: true,
+)
+
+libnvme_mi_dep = declare_dependency(
+    include_directories: incdir,
+    link_with: libnvme_mi,
+)
+
 mode = ['rw-r--r--', 0, 0]
 install_headers('libnvme.h', install_mode: mode)
 install_headers([
@@ -70,6 +97,7 @@ install_headers([
         'nvme/tree.h',
         'nvme/types.h',
         'nvme/util.h',
+        'nvme/mi.h',
     ],
     subdir: 'nvme',
     install_mode: mode,

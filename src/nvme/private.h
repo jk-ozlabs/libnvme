@@ -12,6 +12,7 @@
 #include <ccan/list/list.h>
 
 #include "fabrics.h"
+#include "mi.h"
 
 #ifdef CONFIG_LIBUUID
 #include <uuid/uuid.h>
@@ -130,5 +131,45 @@ int nvme_set_attr(const char *dir, const char *attr, const char *value);
 void json_read_config(nvme_root_t r, const char *config_file);
 
 int json_update_config(nvme_root_t r, const char *config_file);
+
+/* mi internal headers */
+
+/* internal transport API */
+struct nvme_mi_req {
+	struct nvme_mi_msg_hdr *hdr;
+	size_t hdr_len;
+	void *data;
+	size_t data_len;
+	__u32 mic;
+};
+
+struct nvme_mi_resp {
+	struct nvme_mi_msg_hdr *hdr;
+	size_t hdr_len;
+	void *data;
+	size_t data_len;
+	__u32 mic;
+};
+
+struct nvme_mi_transport {
+	const char *name;
+	bool mic_enabled;
+	int (*submit)(struct nvme_mi_ep *ep,
+		      struct nvme_mi_req *req,
+		      struct nvme_mi_resp *resp);
+	void (*close)(struct nvme_mi_ep *ep);
+};
+
+struct nvme_mi_ep {
+	const struct nvme_mi_transport *transport;
+	void *transport_data;
+};
+
+struct nvme_mi_ctrl {
+	struct nvme_mi_ep	*ep;
+	__u16			id;
+};
+
+struct nvme_mi_ep *nvme_mi_init_ep(void);
 
 #endif /* _LIBNVME_PRIVATE_H */

@@ -1,4 +1,5 @@
 NAME=libnvme
+NAME_MI=libnvme-mi
 SPECFILE=$(NAME).spec
 VERSION=$(shell awk '/Version:/ { print $$2 }' $(SPECFILE))
 
@@ -23,13 +24,15 @@ SED ?= sed
 INSTALL ?= install
 
 soname=$(NAME).so.1
+soname_mi=$(NAME_MI).so.1
 minor=0
 micro=1
 libname=$(soname).$(minor).$(micro)
-all_targets += $(NAME).a
+libname_mi=$(soname_mi).$(minor).$(micro)
+all_targets += $(NAME).a $(NAME_MI).a
 
 ifeq ($(ENABLE_SHARED),1)
-all_targets += $(libname)
+all_targets += $(libname) $(libname_mi)
 endif
 
 include ../Makefile.quiet
@@ -60,6 +63,13 @@ libnvme_sobjs := $(patsubst %.c,%.os,$(libnvme_srcs))
 
 $(libnvme_objs) $(libnvme_sobjs): $(libnvme_api) $(libnvme_priv) $(libccan_objs)
 
+libnvme_mi_api := nvme/mi.h
+libnvme_mi_srcs := nvme/mi.c nvme/mi-mctp.c
+libnvme_mi_objs := $(patsubst %.c,%.ol,$(libnvme_mi_srcs))
+libnvme_mi_sobjs := $(patsubst %.c,%.os,$(libnvme_mi_srcs))
+
+$(libnvme_mi_objs) $(libnvme_mi_sobjs): $(libnvme_mi_api) $(libccan_objs)
+
 %.os: %.c
 	$(QUIET_CC)$(CC) $(SO_CFLAGS) -c -o $@ $<
 
@@ -77,20 +87,33 @@ libnvme.a: $(libnvme_objs) $(libccan_objs)
 $(libname): $(libnvme_sobjs) $(libccan_sobjs) libnvme.map
 	$(QUIET_CC)$(CC) $(SO_CFLAGS) -Wl,--version-script=libnvme.map -Wl,-soname=$(soname) -o $@ $(libnvme_sobjs) $(libccan_sobjs) $(LINK_FLAGS) $(LIBS)
 
+libnvme-mi.a: $(libnvme_mi_objs) $(libccan_objs)
+	@rm -f libnvme-mi.a
+	$(QUIET_AR)$(AR) r libnvme-mi.a $^
+	$(QUIET_RANLIB)$(RANLIB) libnvme-mi.a
+
+$(libname_mi): $(libnvme_mi_sobjs) $(libccan_sobjs)
+	$(QUIET_CC)$(CC) $(SO_CFLAGS) -Wl,-soname=$(soname_mi) -o $@ $(libnvme_mi_sobjs) $(libccan_sobjs) $(libnvme_SO_CFLAGS) $(LDFLAGS) $(LIBS)
+
 install: $(all_targets)
 	$(INSTALL) -D -m 644 libnvme.a $(libdir)/libnvme.a
-	for i in $(libnvme_api); do $(INSTALL) -D -m 644 $$i $(includedir)/$$i; done
+	$(INSTALL) -D -m 644 libnvme-mi.a $(libdir)/libnvme-mi.a
+	for i in $(libnvme_api) $(libnvme_mi_api); do $(INSTALL) -D -m 644 $$i $(includedir)/$$i; done
 ifeq ($(ENABLE_SHARED),1)
 	$(INSTALL) -D -m 755 $(libname) $(libdir)/$(libname)
 	ln -sf $(libname) $(libdir)/$(soname)
 	ln -sf $(libname) $(libdir)/libnvme.so
+	$(INSTALL) -D -m 755 $(libname_mi) $(libdir)/$(libname_mi)
+	ln -sf $(libname_mi) $(libdir)/$(soname_mi)
+	ln -sf $(libname_mi) $(libdir)/libnvme-mi.so
 endif
 
 $(libnvme_objs): $(libnvme_api) $(libnvme_private)
+$(libnvme_mi_objs): $(libnvme_api) $(libnvme_mi_api) $(libnvme_private)
 $(libccan_objs): $(libccan_headers) $(CCANDIR)ccan-config.h
 
 clean:
-	rm -f $(all_targets) $(libnvme_objs) $(libnvme_sobjs) $(libccan_objs) $(libccan_sobjs) $(soname).new
+	rm -f $(all_targets) $(libnvme_objs) $(libnvme_mi_objs) $(libnvme_mi_sobjs) $(libnvme_sobjs) $(libccan_objs) $(libccan_sobjs) $(soname).new
 	rm -f $(CCANDIR)ccan-config.h
 	rm -f $(CCANDIR)tools/configurator/configurator
 	rm -f *.so* *.a *.o

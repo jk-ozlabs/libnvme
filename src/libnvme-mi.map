@@ -1,0 +1,11 @@
+{
+	global:
+		nvme_mi_init_ctrl;
+		nvme_mi_close;
+		nvme_mi_mi_read_mi_data_subsys;
+		nvme_mi_mi_read_mi_data_port;
+		nvme_mi_mi_subsystem_health_status_poll;
+		nvme_mi_open_mctp;
+	local:
+		*;
+};
