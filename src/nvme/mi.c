@@ -197,6 +197,87 @@ int nvme_mi_admin_identify_ctrl_list(nvme_mi_ctrl_t ctrl,
 					 0, 0, ctrllist, 0, sizeof(*ctrllist));
 }
 
+static int __nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
+					bool rae, off_t offset, size_t size,
+					void *data)
+{
+	struct nvme_mi_admin_resp_hdr resp_hdr;
+	struct nvme_mi_admin_req_hdr req_hdr;
+	struct nvme_mi_resp resp;
+	struct nvme_mi_req req;
+	__u32 ndw;
+	__u64 off;
+	int rc;
+
+	/* we have to get a response within a MCTP message size... */
+	if (!size || size > 0x8000 - 8 || size < 4)
+		return -EINVAL;
+
+	ndw = (size >> 2) - 1;
+	off = offset;
+
+	nvme_mi_admin_init_req(&req, &req_hdr, ctrl->id, nvme_admin_get_log_page);
+
+	req_hdr.cdw10 = cpu_to_le16(ndw & 0xffff) << 16 |
+			(rae ? 1 : 0) << 15 |
+			NVME_LOG_LSP_NONE << 8 |
+			log_id;
+
+	req_hdr.cdw11 = NVME_LOG_LSI_NONE << 16 |
+			cpu_to_le16(ndw >> 16);
+
+	req_hdr.cdw12 = cpu_to_le32(off & 0xffffffff);
+	req_hdr.cdw13 = cpu_to_le32(off >> 32);
+	req_hdr.flags = 0x1;
+	req_hdr.dlen = cpu_to_le32(size & 0xffffffff);
+
+	nvme_mi_calc_req_mic(&req);
+
+	nvme_mi_admin_init_resp(&resp, &resp_hdr);
+	resp.data = data;
+	resp.data_len = size;
+
+	rc = nvme_mi_submit(ctrl->ep, &req, &resp);
+	if (rc)
+		return rc;
+
+	if (resp_hdr.status)
+		return resp_hdr.status;
+
+	return 0;
+}
+
+int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
+			       bool rae, off_t offset, size_t size,
+			       void *data)
+{
+	off_t xfer_offset;
+	size_t xfer_size;
+	bool xfer_rae;
+	int rc = 0;
+
+	xfer_size = 4096;
+
+	for (xfer_offset = 0; xfer_offset < size; xfer_offset += xfer_size) {
+
+		/* retain unless we're the last transfer */
+		if (xfer_offset + xfer_size >= size) {
+			xfer_size = size - xfer_offset;
+			xfer_rae = rae;
+		} else {
+			xfer_rae = true;
+		}
+
+		rc = __nvme_mi_admin_get_log_page(ctrl, log_id, xfer_rae,
+						  offset + xfer_offset,
+						  xfer_size,
+						  data + xfer_offset);
+		if (rc)
+			break;
+	}
+
+	return rc;
+}
 
 static int nvme_mi_read_data(nvme_mi_ep_t ep, __u32 cdw0,
 			     void *data, size_t *data_len)

@@ -126,4 +126,8 @@ int nvme_mi_admin_identify_ctrl_partial(nvme_mi_ctrl_t ctrl,
 int nvme_mi_admin_identify_ctrl_list(nvme_mi_ctrl_t ctrl,
 				     struct nvme_ctrl_list *ctrllist);
 
+int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id, bool rae,
+			       off_t offset, size_t size, void *data);
+
+
 #endif /* _LIBNVME_MI_MI_H */
