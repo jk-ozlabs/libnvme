@@ -11,6 +11,7 @@
 		nvme_mi_admin_identify_ctrl_partial;
 		nvme_mi_admin_identify_ctrl_list;
 		nvme_mi_admin_get_log_page;
+		nvme_mi_admin_xfer;
 		nvme_mi_open_mctp;
 	local:
 		*;
