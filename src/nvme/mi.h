@@ -141,5 +141,13 @@ int nvme_mi_admin_identify_ctrl_list(nvme_mi_ctrl_t ctrl,
 int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id, bool rae,
 			       off_t offset, size_t size, void *data);
 
+int nvme_mi_admin_security_send(nvme_mi_ctrl_t ctrl, __u8 secp,
+				__u8 spsp1, __u8 spsp2, __u8 nssf,
+				size_t size, void *data);
+
+int nvme_mi_admin_security_recv(nvme_mi_ctrl_t ctrl, __u8 secp,
+				__u8 spsp1, __u8 spsp2, __u8 nssf,
+				size_t *size, void *data);
+
 
 #endif /* _LIBNVME_MI_MI_H */

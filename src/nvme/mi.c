@@ -326,6 +326,96 @@ int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
 	return rc;
 }
 
+int nvme_mi_admin_security_send(nvme_mi_ctrl_t ctrl, __u8 secp,
+				__u8 spsp1, __u8 spsp2, __u8 nssf,
+				size_t size, void *data)
+{
+
+	struct nvme_mi_admin_resp_hdr resp_hdr;
+	struct nvme_mi_admin_req_hdr req_hdr;
+	struct nvme_mi_resp resp;
+	struct nvme_mi_req req;
+	int rc;
+
+	if (size > 4096)
+		return -EINVAL;
+
+	nvme_mi_admin_init_req(&req, &req_hdr, ctrl->id,
+			       nvme_admin_security_send);
+
+	req_hdr.cdw10 = cpu_to_le32(secp << 24 |
+				    spsp1 << 16 |
+				    spsp2 << 8 |
+				    nssf);
+
+	req_hdr.cdw11 = cpu_to_le32(size & 0xffffffff);
+
+	req_hdr.flags = 0x1;
+	req_hdr.dlen = cpu_to_le32(size & 0xffffffff);
+
+	nvme_mi_calc_req_mic(&req);
+
+	nvme_mi_admin_init_resp(&resp, &resp_hdr);
+	resp.data = data;
+	resp.data_len = size;
+
+	rc = nvme_mi_submit(ctrl->ep, &req, &resp);
+	if (rc)
+		return rc;
+
+	if (resp_hdr.status)
+		return resp_hdr.status;
+
+	return 0;
+}
+
+int nvme_mi_admin_security_recv(nvme_mi_ctrl_t ctrl, __u8 secp,
+				__u8 spsp1, __u8 spsp2, __u8 nssf,
+				size_t *sizep, void *data)
+{
+
+	struct nvme_mi_admin_resp_hdr resp_hdr;
+	struct nvme_mi_admin_req_hdr req_hdr;
+	struct nvme_mi_resp resp;
+	struct nvme_mi_req req;
+	size_t size;
+	int rc;
+
+	size = *sizep;
+	if (size > 4096)
+		return -EINVAL;
+
+	nvme_mi_admin_init_req(&req, &req_hdr, ctrl->id,
+			       nvme_admin_security_recv);
+
+	req_hdr.cdw10 = cpu_to_le32(secp << 24 |
+				    spsp1 << 16 |
+				    spsp2 << 8 |
+				    nssf);
+
+	req_hdr.cdw11 = cpu_to_le32(size & 0xffffffff);
+
+	req_hdr.flags = 0x1;
+	req_hdr.dlen = cpu_to_le32(size & 0xffffffff);
+
+	nvme_mi_calc_req_mic(&req);
+
+	nvme_mi_admin_init_resp(&resp, &resp_hdr);
+	resp.data = data;
+	resp.data_len = size;
+
+	rc = nvme_mi_submit(ctrl->ep, &req, &resp);
+	if (rc)
+		return rc;
+
+	if (resp_hdr.status)
+		return resp_hdr.status;
+
+	*sizep = resp.data_len;
+
+	return 0;
+}
+
 static int nvme_mi_read_data(nvme_mi_ep_t ep, __u32 cdw0,
 			     void *data, size_t *data_len)
 {
