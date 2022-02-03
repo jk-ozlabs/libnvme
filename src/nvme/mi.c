@@ -244,9 +244,9 @@ int nvme_mi_admin_identify_ctrl_list(nvme_mi_ctrl_t ctrl,
 					 0, 0, ctrllist, 0, sizeof(*ctrllist));
 }
 
-static int __nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
-					bool rae, off_t offset, size_t size,
-					void *data)
+static int __nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u32 nsid,
+					__u8 log_id, bool rae, off_t offset,
+					size_t size, void *data)
 {
 	struct nvme_mi_admin_resp_hdr resp_hdr;
 	struct nvme_mi_admin_req_hdr req_hdr;
@@ -265,6 +265,7 @@ static int __nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
 
 	nvme_mi_admin_init_req(&req, &req_hdr, ctrl->id, nvme_admin_get_log_page);
 
+	req_hdr.cdw1 = cpu_to_le32(nsid);
 	req_hdr.cdw10 = cpu_to_le16(ndw & 0xffff) << 16 |
 			(rae ? 1 : 0) << 15 |
 			NVME_LOG_LSP_NONE << 8 |
@@ -294,9 +295,9 @@ static int __nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
 	return 0;
 }
 
-int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
-			       bool rae, off_t offset, size_t size,
-			       void *data)
+int nvme_mi_admin_get_log_page_nsid(nvme_mi_ctrl_t ctrl, __u32 nsid,
+				    __u8 log_id, bool rae, off_t offset,
+				    size_t size, void *data)
 {
 	off_t xfer_offset;
 	size_t xfer_size;
@@ -315,7 +316,7 @@ int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
 			xfer_rae = true;
 		}
 
-		rc = __nvme_mi_admin_get_log_page(ctrl, log_id, xfer_rae,
+		rc = __nvme_mi_admin_get_log_page(ctrl, nsid, log_id, xfer_rae,
 						  offset + xfer_offset,
 						  xfer_size,
 						  data + xfer_offset);
@@ -324,6 +325,14 @@ int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
 	}
 
 	return rc;
+}
+
+int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u8 log_id,
+			       bool rae, off_t offset, size_t size,
+			       void *data)
+{
+	return nvme_mi_admin_get_log_page_nsid(ctrl, NVME_NSID_NONE, log_id,
+					       rae, offset, size, data);
 }
 
 int nvme_mi_admin_security_send(nvme_mi_ctrl_t ctrl, __u8 secp,
